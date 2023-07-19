@@ -4,6 +4,7 @@ import {fs, util} from '@appium/support';
 import os from 'os';
 import path from 'path';
 import {EventEmitter} from 'events';
+import {async} from 'validate.js';
 
 const CACHE_SIZE = 1024;
 const IDEMPOTENT_RESPONSES = new LRU({
@@ -53,13 +54,15 @@ function cacheResponse(key, req, res) {
   responseListener.once('error', (e) => {
     writeError = e;
   });
-  res.once('finish', () => {
+  res.once('finish', async () => {
     isResponseFullySent = true;
     responseListener.end();
+    await fs.rimraf(tmpFile);
   });
-  res.once('close', () => {
+  res.once('close', async () => {
     if (!isResponseFullySent) {
       responseListener.end();
+      await fs.rimraf(tmpFile);
     }
   });
   responseListener.once('close', () => {
